@@ -661,7 +661,8 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3288-veyron-pinky.dtb \
 	rk3288-veyron-speedy.dtb
 dtb-$(CONFIG_ARCH_S3C24XX) += \
-	s3c2416-smdk2416.dtb
+	s3c2416-smdk2416.dtb \
+	s3c2440-tq2440-dt.dtb
 dtb-$(CONFIG_ARCH_S3C64XX) += \
 	s3c6410-mini6410.dtb \
 	s3c6410-smdk6410.dtb

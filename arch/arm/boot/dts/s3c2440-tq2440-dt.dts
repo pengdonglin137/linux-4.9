@@ -1,0 +1,75 @@
+/*
+ * SAMSUNG SMDK2416 board device tree source
+ *
+ * Copyright (c) 2013 Heiko Stuebner <heiko@sntech.de>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "s3c2440.dtsi"
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/clock/s3c2410.h>
+
+/ {
+	model = "TQ2440";
+	compatible = "samsung,s3c2440", "samsung,tq2440";
+
+	memory {
+		reg =  <0x30000000 0x34000000>;
+	};
+
+	chosen {
+		/* bootargs = "noinitrd root=/dev/mtdblock2 init=/linuxrc console=ttySAC0,115200n8 earlyprintk"; */
+		bootargs = "root=/dev/ram0 rw rootfstype=ext2 console=ttySAC0,115200n8 init=/linuxrc ignore_loglevel earlyprintk";
+	};
+
+	clocks {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		xti: oscillator@0 {
+			compatible = "fixed-clock";
+			reg = <0>;
+			clock-frequency = <12000000>;
+			clock-output-names = "xti";
+			#clock-cells = <0>;
+		};
+	};
+
+	serial@50000000 {
+		status = "okay";
+		clock-names = "uart";
+		clocks = <&clocks PCLK_UART0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart0_data>;
+	};
+
+	srom-cs4@20000000 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0x20000000 0x8000000>;
+		ranges;
+
+		ethernet@18000000 {
+			compatible = "davicom,dm9000";
+			reg = <0x20000000 0x2 0x20000004 0x2>;
+			interrupt-parent = <&gpf>;
+			interrupts = <7 IRQ_TYPE_EDGE_RISING>;
+			local-mac-address = [00 00 de ad be ef];
+			davicom,no-eeprom;
+		};
+	};
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};

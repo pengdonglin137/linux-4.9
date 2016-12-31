@@ -60,6 +60,8 @@ obj-$(CONFIG_ARCH_SMDK2410)		+= mach-smdk2410.o
 obj-$(CONFIG_MACH_TCT_HAMMER)		+= mach-tct_hammer.o
 obj-$(CONFIG_MACH_VR1000)		+= mach-vr1000.o
 
+obj-$(CONFIG_MACH_TQ2440_DT)		+= mach-tq2440-dt.o
+
 obj-$(CONFIG_MACH_JIVE)			+= mach-jive.o
 obj-$(CONFIG_MACH_SMDK2413)		+= mach-smdk2413.o
 obj-$(CONFIG_MACH_VSTMS)		+= mach-vstms.o

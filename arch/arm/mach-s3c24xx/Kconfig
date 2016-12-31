@@ -475,6 +475,15 @@ config MACH_MINI2440
 	  Say Y here to select support for the MINI2440. Is a 10cm x 10cm board
 	  available via various sources. It can come with a 3.5" or 7" touch LCD.
 
+config MACH_TQ2440_DT
+	bool "TQ2440 development board using device tree"
+	select CLKSRC_OF
+	select USE_OF
+	select PINCTRL
+	select PINCTRL_S3C24XX
+	help
+	  Say Y here to select support for the TQ2440.
+
 config MACH_NEXCODER_2440
 	bool "NexVision NEXCODER 2440 Light Board"
 	select S3C2440_XTAL_12000000
