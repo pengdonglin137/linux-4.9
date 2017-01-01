@@ -11,7 +11,6 @@
 /dts-v1/;
 #include "s3c2440.dtsi"
 #include <dt-bindings/interrupt-controller/irq.h>
-#include <dt-bindings/clock/s3c2410.h>
 
 / {
 	model = "TQ2440";
@@ -40,13 +39,6 @@
 		};
 	};
 
-	serial@50000000 {
-		status = "okay";
-		clock-names = "uart";
-		clocks = <&clocks PCLK_UART0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&uart0_data>;
-	};
 
 	srom-cs4@20000000 {
 		compatible = "simple-bus";
@@ -55,7 +47,7 @@
 		reg = <0x20000000 0x8000000>;
 		ranges;
 
-		ethernet@18000000 {
+		ethernet@20000000 {
 			compatible = "davicom,dm9000";
 			reg = <0x20000000 0x2 0x20000004 0x2>;
 			interrupt-parent = <&gpf>;
@@ -71,5 +63,9 @@
 };
 
 &rtc {
+	status = "okay";
+};
+
+&uart0 {
 	status = "okay";
 };
