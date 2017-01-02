@@ -61,5 +61,30 @@
 
 	i2c@54000000 {
 		compatible = "samsung,s3c2440-i2c";
+		clocks = <&clocks PCLK_I2C>;
+		clock-names = "i2c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c0_bus>;
+	};
+
+	nand0: nand@4e000000 {
+		compatible = "samsung,s3c2440-nand";
+		reg = <0x4e000000 0x40>;
+		interrupts = <0 0 24 3>;
+		clocks = <&clocks HCLK_NAND>;
+		clock-names = "nand";
+		pinctrl-names = "default";
+		pinctrl-0 = <&nand_pinctrl>;
+
+		status = "disabled";
+       };
+
+	usb_ohci: usb_ohci@49000000 {
+		compatible = "samsung,s3c2440-ohci";
+		reg = <0x49000000 0x60>;
+		interrupts = <0 0 26 3>;
+		clocks = <&clocks HCLK_USBH>, <&clocks UCLK>;
+		clock-names = "usb-host", "usb-bus-host";
+		status = "disabled";
 	};
 };
