@@ -8,6 +8,8 @@
  * published by the Free Software Foundation.
  */
 
+#include <dt-bindings/pinctrl/samsung.h>
+
 &pinctrl_0 {
 	/*
 	 * Pin banks
@@ -69,5 +71,16 @@
 	uart0_data: uart0-data {
 		samsung,pins = "gph-0", "gph-1";
 		samsung,pin-function = <2>;
+	};
+
+	i2c0_bus: i2c0-bus {
+		samsung,pins = "gpe-14", "gpe-15";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_2>;
+	};
+
+	nand_pinctrl: nand_pinctrl {
+		samsung,pins = "gpa-17", "gpa-18", "gpa-19",
+				 "gpa-20", "gpa-22";
+		samsung,pin-function = <1>;
 	};
 };

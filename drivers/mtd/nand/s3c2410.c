@@ -40,6 +40,11 @@
 #include <linux/clk.h>
 #include <linux/cpufreq.h>
 
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_device.h>
+#endif
+
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
@@ -881,7 +886,7 @@ static void s3c2410_nand_init_chip(struct s3c2410_nand_info *info,
 		break;
 	}
 #else
-	chip->ecc.mode	    = NAND_ECC_SOFT;
+	chip->ecc.mode	    = NAND_ECC_NONE; // NAND_ECC_SOFT
 	chip->ecc.algo	= NAND_ECC_HAMMING;
 #endif
 
@@ -947,6 +952,173 @@ static void s3c2410_nand_update_chip(struct s3c2410_nand_info *info,
 	}
 }
 
+#ifdef CONFIG_OF
+static int parse_partitions_node(struct device *dev, struct s3c2410_platform_nand **plat)
+{
+	struct device_node *mtd_node = dev->of_node;
+	struct s3c2410_nand_set *sets = NULL;
+	struct mtd_partition **pparts = NULL;
+	struct mtd_partition *parts;
+
+	struct device_node *ofpart_node;
+	const char *partname;
+	const char *name;
+	struct device_node *pp;
+	int nr_parts, i, val;
+
+
+	ofpart_node = of_get_child_by_name(mtd_node, "partitions");
+	if (!ofpart_node) {
+		pr_err("No partitions node found.\n");
+		return -ENODEV;
+	}
+
+	if (!of_device_is_available(ofpart_node)) {
+		dev_dbg(dev, "%s is disabled\n", ofpart_node->full_name);
+		return 0;
+	}
+
+	sets = devm_kzalloc(dev, sizeof(*sets), GFP_KERNEL);
+	if (IS_ERR(sets)) {
+		dev_err(dev, "failed to alloc memory for sets.\n");
+		return -ENOMEM;
+	}
+	(*plat)->sets = sets;
+	(*plat)->nr_sets = 1;
+	pparts = &sets->partitions;
+
+	if (!of_property_read_u32(ofpart_node, "nr-chips", &val)) {
+		sets->nr_chips = val;
+	} else {
+		dev_warn(dev, "%s: set nr_chips to default value 1.(val: %d)\n", ofpart_node->full_name, val);
+		sets->nr_chips = 1;
+	}
+
+	of_property_read_string_index(ofpart_node, "set-name", 0, &name);
+	sets->name = devm_kstrdup(dev, name, GFP_KERNEL);
+	if (sets->name == NULL) {
+		dev_err(dev, "failed to alloc memory for name.\n");
+		return -ENOMEM;
+	}
+
+	/* First count the subnodes */
+	nr_parts = 0;
+	for_each_child_of_node(ofpart_node,  pp) {
+		nr_parts++;
+	}
+	dev_dbg(dev, "found %d partitions\n", nr_parts);
+
+	if (nr_parts == 0) {
+		dev_warn(dev, "no partition found.\n");
+		return 0;
+	}
+
+	sets->nr_partitions = nr_parts;
+	parts = devm_kzalloc(dev, nr_parts * sizeof(*parts), GFP_KERNEL);
+	if (!parts) {
+		dev_err(dev, "faile to alloc memroy for parts.\n");
+		return -ENOMEM;
+	}
+
+	i = 0;
+	for_each_child_of_node(ofpart_node,  pp) {
+		const __be32 *reg;
+		int len;
+		int a_cells, s_cells;
+
+		//printk("%s: pp: %s\n", __func__, pp->full_name);
+		reg = of_get_property(pp, "reg", &len);
+		if (!reg) {
+			dev_err(dev, "%s: ofpart partition %s (%s) missing reg property.\n",
+				__func__, pp->full_name, mtd_node->full_name);
+			return -EINVAL;
+		}
+
+		a_cells = of_n_addr_cells(pp);
+		s_cells = of_n_size_cells(pp);
+		if (len / 4 != a_cells + s_cells) {
+			dev_err(dev, "%s: ofpart partition %s (%s) error parsing reg property.\n",
+				 __func__, pp->full_name,
+				 mtd_node->full_name);
+			return -EINVAL;
+		}
+
+		parts[i].offset = of_read_number(reg, a_cells);
+		parts[i].size = of_read_number(reg + a_cells, s_cells);
+
+		partname = of_get_property(pp, "label", &len);
+		if (!partname)
+			partname = of_get_property(pp, "name", &len);
+		parts[i].name = partname;
+
+		if (of_get_property(pp, "read-only", &len))
+			parts[i].mask_flags |= MTD_WRITEABLE;
+
+		if (of_get_property(pp, "lock", &len))
+			parts[i].mask_flags |= MTD_POWERUP_LOCK;
+
+		//printk("part: %s, offset: %llx size: %llx, mask: %x\n", partname, parts[i].offset, parts[i].size, parts[i].mask_flags);
+
+		i++;
+	}
+
+	*pparts = parts;
+	return 0;
+}
+
+static int s3c24xx_get_dt_info(struct device *dev, struct s3c2410_platform_nand **plat)
+{
+	struct device_node *np = dev->of_node;
+	int val;
+
+	dev_dbg(dev, "%s enter, *plat: %p\n", __func__, *plat);
+	if (!(*plat)) {
+		*plat = devm_kzalloc(dev, sizeof(struct s3c2410_platform_nand), GFP_KERNEL);
+		if (*plat == NULL) {
+			pr_err("%s failed to alloc memory.\n", __func__);
+			return -ENOMEM;
+		}
+
+		if (!of_property_read_u32(np, "nand,tacls", &val)) {
+			(*plat)->tacls = val;
+		} else {
+			dev_err(dev, "DT: can not find tacls.\n");
+			return -EINVAL;
+		}
+
+		if (!of_property_read_u32(np, "nand,twrph0", &val)) {
+			(*plat)->twrph0 = val;
+		} else {
+			dev_err(dev, "DT: can not find twrph0\n");
+			return -EINVAL;
+		}
+
+		if (!of_property_read_u32(np, "nand,twrph1", &val)) {
+			(*plat)->twrph1 = val;
+		} else {
+			dev_err(dev, "DT: can not find twrph1\n");
+			return -EINVAL;
+		}
+
+		val = parse_partitions_node(dev, plat);
+		if (val < 0) {
+			dev_dbg(dev, "failed to call parse_partitions_node.\n");
+			return val;
+		}
+	}
+
+	return 0;
+}
+
+static const struct of_device_id s3c24xx_nand_ids_of_match[] = {
+	{ .compatible = "samsung,s3c2410-nand", .data = (void *)TYPE_S3C2410 },
+	{ .compatible = "samsung,s3c2440-nand", .data = (void *)TYPE_S3C2440 },
+	{ .compatible = "samsung,s3c2412-nand", .data = (void *)TYPE_S3C2412 },
+	{ .compatible = "samsung,s3c6400-nand", .data = (void *)TYPE_S3C2412 },
+	{},
+};
+#endif
+
 /* s3c24xx_nand_probe
  *
  * called by device layer when it finds a device matching
@@ -957,6 +1129,9 @@ static void s3c2410_nand_update_chip(struct s3c2410_nand_info *info,
 static int s3c24xx_nand_probe(struct platform_device *pdev)
 {
 	struct s3c2410_platform_nand *plat = to_nand_plat(pdev);
+	const struct of_device_id *match =
+		of_match_device(s3c24xx_nand_ids_of_match, &pdev->dev);
+	struct device *dev = &pdev->dev;
 	enum s3c_cpu_type cpu_type;
 	struct s3c2410_nand_info *info;
 	struct s3c2410_nand_mtd *nmtd;
@@ -967,7 +1142,32 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
 	int nr_sets;
 	int setno;
 
-	cpu_type = platform_get_device_id(pdev)->driver_data;
+	dev_dbg(dev, "%s enter.\n", __func__);
+
+	if (dev->of_node) {
+		cpu_type = (enum s3c_cpu_type)match->data;
+		if (s3c24xx_get_dt_info(dev, &plat))
+			return -EINVAL;
+		pdev->dev.platform_data = plat;
+#if 0
+		{ // dump
+			int i, j;
+			for (i = 0; i < plat->nr_sets; i++) {
+				printk("chip: %d, name: %s\n", plat->sets[i].nr_chips, plat->sets[i].name);
+				for (j = 0; j < plat->sets[i].nr_partitions; j++) {
+					printk("part: %s, from %llx to %llx, flags: %x\n",
+						plat->sets[i].partitions[j].name,
+						plat->sets[i].partitions[j].offset,
+						plat->sets[i].partitions[j].offset + plat->sets[i].partitions[j].size,
+						plat->sets[i].partitions[j].mask_flags);
+				}
+				printk("\n");
+			}
+		}
+#endif
+	} else {
+		cpu_type = platform_get_device_id(pdev)->driver_data;
+	}
 
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
 	if (info == NULL) {
@@ -1155,6 +1355,9 @@ static struct platform_driver s3c24xx_nand_driver = {
 	.id_table	= s3c24xx_driver_ids,
 	.driver		= {
 		.name	= "s3c24xx-nand",
+#ifdef CONFIG_OF
+		.of_match_table = of_match_ptr(s3c24xx_nand_ids_of_match),
+#endif
 	},
 };
 

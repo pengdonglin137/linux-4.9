@@ -19,6 +19,7 @@
 		serial0 = &uart0;
 		serial1 = &uart1;
 		serial2 = &uart2;
+		i2c0 = &i2c;
 	};
 
 	intc:interrupt-controller@4a000000 {
@@ -84,7 +85,7 @@
 		status = "disabled";
 	};
 
-	i2c@54000000 {
+	i2c:i2c@54000000 {
 		compatible = "samsung,s3c2410-i2c";
 		reg = <0x54000000 0x100>;
 		interrupts = <0 0 27 3>;

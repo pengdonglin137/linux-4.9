@@ -11,17 +11,22 @@
 /dts-v1/;
 #include "s3c2440.dtsi"
 #include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	model = "TQ2440";
 	compatible = "samsung,s3c2440", "samsung,tq2440";
+
+	aliases {
+		i2c1 = &i2c_gpio_1;
+	};
 
 	memory {
 		reg =  <0x30000000 0x34000000>;
 	};
 
 	chosen {
-		/* bootargs = "noinitrd root=/dev/mtdblock2 init=/linuxrc console=ttySAC0,115200n8 earlyprintk"; */
+		/*bootargs = "noinitrd root=/dev/mtdblock3 init=/linuxrc console=ttySAC0,115200n8 earlyprintk";*/
 		bootargs = "root=/dev/ram0 rw rootfstype=ext2 console=ttySAC0,115200n8 init=/linuxrc ignore_loglevel earlyprintk";
 	};
 
@@ -56,6 +61,23 @@
 			davicom,no-eeprom;
 		};
 	};
+
+	i2c_gpio_1: i2c-gpio-1 {
+		compatible = "i2c-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpios = <&gpe 15 GPIO_ACTIVE_HIGH>,  // SDA
+			<&gpe 14 GPIO_ACTIVE_HIGH>;  // SCL
+		i2c-gpio,delay-us = <5>; // 100KHz
+		status = "okay";
+
+		eeprom@50 {
+			compatible = "24c02";
+			reg = <0x50>;
+			pagesize = <32>;
+			status = "okay";
+		};
+	};
 };
 
 &watchdog {
@@ -67,5 +89,61 @@
 };
 
 &uart0 {
+	status = "okay";
+};
+
+&i2c {
+	status = "disabled";
+	samsung,i2c-max-bus-freq = <200000>;
+
+	eeprom@50 {
+		compatible = "24c02";
+		reg = <0x50>;
+		pagesize = <32>;
+		status = "okay";
+	};
+};
+
+&nand0 {
+	status = "okay";
+	nand,tacls = <0xa>;
+	nand,twrph0 = <0x19>;
+	nand,twrph1 = <0xa>;
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	partitions {
+		/* MTD partition table */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		nr-chips = <1>;
+		set-name = "tq2440-0";
+
+		partition@0 {
+			label = "SPL";
+			reg = <0x0000000 0x100000>;
+			read-only;
+		};
+
+		partition@100000 {
+			label = "U-BOOT";
+			reg = <0x0100000 0x100000>;
+			read-only;
+		};
+
+		partition@200000 {
+			label = "KERNEL";
+			reg = <0x200000 0x300000>;
+			read-only;
+		};
+		partition@500000 {
+			label = "ROOTFS";
+			reg = <0x500000 0x0>;
+		};
+	};
+};
+
+&usb_ohci {
 	status = "okay";
 };
