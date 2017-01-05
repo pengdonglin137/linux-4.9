@@ -58,6 +58,39 @@
 #define DM_RX_OVERHEAD	7	/* 3 byte header + 4 byte crc tail */
 #define DM_TIMEOUT	1000
 
+/* Setup ethernet address */
+static u8 param_addr[ETH_ALEN];
+
+static int __init dm9601_set_mac(char *str) {
+	u8 addr[ETH_ALEN];
+	uint val;
+	int idx = 0;
+	char *p = str, *end;
+
+	while (*p && idx < ETH_ALEN) {
+		val = simple_strtoul(p, &end, 16);
+		if (end <= p) {
+			break;
+		} else {
+			addr[idx++] = val;
+			p = end;
+			if (*p == ':'|| *p == '-') {
+				p++;
+			} else {
+				break;
+			}
+		}
+	}
+
+	if (idx == ETH_ALEN) {
+		printk("Setup ethernet address to %pM\n", addr);
+		memcpy(param_addr, addr, ETH_ALEN);
+	}
+
+	return 1;
+}
+__setup("ethmac=", dm9601_set_mac);
+
 static int dm_read(struct usbnet *dev, u8 reg, u16 length, void *data)
 {
 	int err;
@@ -389,7 +422,11 @@ static int dm9601_bind(struct usbnet *dev, struct usb_interface *intf)
 	/*
 	 * Overwrite the auto-generated address only with good ones.
 	 */
-	if (is_valid_ether_addr(mac))
+	if (is_valid_ether_addr(param_addr)) {
+		/* write MAC to dm9621 */
+		memcpy(dev->net->dev_addr, param_addr, ETH_ALEN);
+		__dm9601_set_mac_address(dev);
+	} else if (is_valid_ether_addr(mac))
 		memcpy(dev->net->dev_addr, mac, ETH_ALEN);
 	else {
 		printk(KERN_WARNING

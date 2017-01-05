@@ -1,10 +1,11 @@
 #!/bin/bash
 
-make uImage -j4
+
+make ARCH=arm uImage LOADADDR=0x40008000 -j4
 
 make dtbs
 
 cp arch/arm/boot/uImage /tftpboot
-cp arch/arm/boot/dts/s3c2440-tq2440-dt.dtb  /tftpboot/dtb
+cp arch/arm/boot/dts/exynos4412-tiny4412.dtb  /tftpboot/dtb
 
-dtc -I dtb -O dts -o tq2440.dts arch/arm/boot/dts/s3c2440-tq2440-dt.dtb
+dtc -I dtb -O dts -o tiny4412.dts arch/arm/boot/dts/exynos4412-tiny4412.dtb
