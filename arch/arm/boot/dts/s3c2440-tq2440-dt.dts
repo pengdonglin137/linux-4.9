@@ -133,13 +133,26 @@
 		};
 
 		partition@200000 {
-			label = "KERNEL";
-			reg = <0x200000 0x300000>;
+			label = "PARAMS";
+			reg = <0x0200000 0x100000>;
 			read-only;
 		};
-		partition@500000 {
+
+		partition@300000 {
+			label = "KERNEL";
+			reg = <0x300000 0x500000>;
+			read-only;
+		};
+
+		partition@600000 {
+			label = "DTB";
+			reg = <0x800000 0x100000>;
+			read-only;
+		};
+
+		partition@700000 {
 			label = "ROOTFS";
-			reg = <0x500000 0x0>;
+			reg = <0x900000 0x0>;
 		};
 	};
 };
