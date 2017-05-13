@@ -91,4 +91,9 @@
 				"gpc-1", "gpc-2", "gpc-3", "gpc-4";
 		samsung,pin-function = <2>;
 	};
+
+	lcd_backlight: lcd_backlight {
+		samsung,pins = "gpg-4";
+		samsung,pin-function = <3>;
+	};
 };

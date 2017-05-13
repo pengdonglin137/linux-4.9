@@ -552,6 +552,32 @@ static void s3c2410fb_lcd_enable(struct s3c2410fb_info *fbi, int enable)
 	local_irq_restore(flags);
 }
 
+static void s3c2410fb_lcd_backlight(struct s3c2410fb_info *fbi, int enable)
+{
+	void __iomem *regs = fbi->io;
+	u_long flags;
+
+	local_irq_save(flags);
+
+	fbi->regs.lcdcon5 = readl(regs + S3C2410_LCDCON5);
+	switch(enable) {
+	case FB_BLANK_UNBLANK:
+		fbi->regs.lcdcon5 &= ~S3C2410_LCDCON5_PWREN;
+		printk(KERN_INFO "Turn off The LCD Backlight\n");
+		break;
+	case FB_BLANK_NORMAL:
+		fbi->regs.lcdcon5 |= S3C2410_LCDCON5_PWREN;
+		printk(KERN_INFO "Turn on The LCD Backlight\n");
+		break;
+	default:
+		break;
+	}
+
+	writel(fbi->regs.lcdcon5, regs + S3C2410_LCDCON5);
+
+	local_irq_restore(flags);
+}
+
 
 /*
  *      s3c2410fb_blank
@@ -569,6 +595,7 @@ static void s3c2410fb_lcd_enable(struct s3c2410fb_info *fbi, int enable)
 static int s3c2410fb_blank(int blank_mode, struct fb_info *info)
 {
 	struct s3c2410fb_info *fbi = info->par;
+#if 0
 	void __iomem *tpal_reg = fbi->io;
 
 	dprintk("blank(mode=%d, info=%p)\n", blank_mode, info);
@@ -586,6 +613,8 @@ static int s3c2410fb_blank(int blank_mode, struct fb_info *info)
 		dprintk("setting TPAL to output 0x000000\n");
 		writel(S3C2410_TPAL_EN, tpal_reg);
 	}
+#endif
+	s3c2410fb_lcd_backlight(fbi, blank_mode);
 
 	return 0;
 }

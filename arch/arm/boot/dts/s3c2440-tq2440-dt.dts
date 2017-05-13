@@ -86,7 +86,7 @@
 		clocks = <&clocks HCLK_LCD>;
 		clock-names = "lcd";
 		pinctrl-names = "default";
-		pinctrl-0 = <&lcd_pinctrl>;
+		pinctrl-0 = <&lcd_pinctrl &lcd_backlight>;
 		status = "okay";
 
 		lcdcon5 = <0xb09>;
