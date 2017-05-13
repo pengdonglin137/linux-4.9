@@ -83,4 +83,12 @@
 				 "gpa-20", "gpa-22";
 		samsung,pin-function = <1>;
 	};
+
+	lcd_pinctrl: lcd_pinctrl {
+		samsung,pins = "gpc-8", "gpc-9", "gpc-10", "gpc-11", "gpc-12", "gpc-13", "gpc-14", "gpc-15",
+				"gpd-0", "gpd-1", "gpd-2", "gpd-3", "gpd-4", "gpd-5", "gpd-6", "gpd-7",
+				"gpd-8", "gpd-9", "gpd-10", "gpd-11", "gpd-12", "gpd-13", "gpd-14", "gpd-15",
+				"gpc-1", "gpc-2", "gpc-3", "gpc-4";
+		samsung,pin-function = <2>;
+	};
 };

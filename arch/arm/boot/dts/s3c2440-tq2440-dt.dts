@@ -69,7 +69,7 @@
 		gpios = <&gpe 15 GPIO_ACTIVE_HIGH>,  // SDA
 			<&gpe 14 GPIO_ACTIVE_HIGH>;  // SCL
 		i2c-gpio,delay-us = <5>; // 100KHz
-		status = "okay";
+		status = "disabled";
 
 		eeprom@50 {
 			compatible = "24c02";
@@ -77,6 +77,32 @@
 			pagesize = <32>;
 			status = "okay";
 		};
+	};
+
+	fb0: fb@4d000000{
+		compatible = "tq2440,lcd";
+		reg = <0x4D000000 0x60>;
+		interrupts = <0 0 16 3>;
+		clocks = <&clocks HCLK_LCD>;
+		clock-names = "lcd";
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd_pinctrl>;
+		status = "okay";
+
+		lcdcon5 = <0xb09>;
+		type = <0x60>;
+		width = /bits/ 16 <480>;
+		height = /bits/ 16 <272>;
+		pixclock = <100000>;
+		xres = /bits/ 16 <480>;
+		yres = /bits/ 16 <272>;
+		bpp = /bits/ 16 <16>;
+		left_margin = /bits/ 16 <2>;
+		right_margin =/bits/ 16  <2>;
+		hsync_len = /bits/ 16 <41>;
+		upper_margin = /bits/ 16 <2>;
+		lower_margin = /bits/ 16 <2>;
+		vsync_len = /bits/ 16 <10>;
 	};
 };
 
@@ -93,7 +119,7 @@
 };
 
 &i2c {
-	status = "disabled";
+	status = "okay";
 	samsung,i2c-max-bus-freq = <200000>;
 
 	eeprom@50 {

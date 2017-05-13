@@ -41,6 +41,8 @@
 #include <linux/pm.h>
 #endif
 
+#include <linux/of.h>
+
 #include "s3c2410fb.h"
 
 /* Debugging stuff */
@@ -687,7 +689,6 @@ static int s3c2410fb_init_registers(struct fb_info *info)
 {
 	struct s3c2410fb_info *fbi = info->par;
 	struct s3c2410fb_mach_info *mach_info = dev_get_platdata(fbi->dev);
-	unsigned long flags;
 	void __iomem *regs = fbi->io;
 	void __iomem *tpal;
 	void __iomem *lpcsel;
@@ -699,19 +700,6 @@ static int s3c2410fb_init_registers(struct fb_info *info)
 		tpal = regs + S3C2410_TPAL;
 		lpcsel = regs + S3C2410_LPCSEL;
 	}
-
-	/* Initialise LCD with values from haret */
-
-	local_irq_save(flags);
-
-	/* modify the gpio(s) with interrupts set (bjd) */
-
-	modify_gpio(S3C2410_GPCUP,  mach_info->gpcup,  mach_info->gpcup_mask);
-	modify_gpio(S3C2410_GPCCON, mach_info->gpccon, mach_info->gpccon_mask);
-	modify_gpio(S3C2410_GPDUP,  mach_info->gpdup,  mach_info->gpdup_mask);
-	modify_gpio(S3C2410_GPDCON, mach_info->gpdcon, mach_info->gpdcon_mask);
-
-	local_irq_restore(flags);
 
 	dprintk("LPCSEL    = 0x%08lx\n", mach_info->lpcsel);
 	writel(mach_info->lpcsel, lpcsel);
@@ -822,6 +810,8 @@ static const char driver_name[] = "s3c2410fb";
 static int s3c24xxfb_probe(struct platform_device *pdev,
 			   enum s3c_drv_type drv_type)
 {
+	struct device_node *np;
+	struct device *dev = &pdev->dev;
 	struct s3c2410fb_info *info;
 	struct s3c2410fb_display *display;
 	struct fb_info *fbinfo;
@@ -833,21 +823,59 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 	int size;
 	u32 lcdcon1;
 
-	mach_info = dev_get_platdata(&pdev->dev);
-	if (mach_info == NULL) {
-		dev_err(&pdev->dev,
-			"no platform data for lcd, cannot attach\n");
+	np = dev->of_node;
+	if (!np) {
+		dev_err(dev, "could not find device info\n");
 		return -EINVAL;
 	}
 
-	if (mach_info->default_display >= mach_info->num_displays) {
-		dev_err(&pdev->dev, "default is %d but only %d displays\n",
-			mach_info->default_display, mach_info->num_displays);
-		return -EINVAL;
+	display = devm_kzalloc(dev, sizeof(*display), GFP_KERNEL);
+	if (!display) {
+		dev_err(dev, "no mem\n");
+		return -ENOMEM;
 	}
 
-	display = mach_info->displays + mach_info->default_display;
+	mach_info = devm_kzalloc(dev, sizeof(*mach_info), GFP_KERNEL);
+	if (!display) {
+		dev_err(dev, "no mem\n");
+		return -ENOMEM;
+	}
+	dev->platform_data = mach_info;
 
+	mach_info->displays = display;
+	mach_info->num_displays = 1;
+	mach_info->default_display = 0;
+
+	of_property_read_u32(np, "lcdcon5", (u32 *)(&display->lcdcon5));
+	of_property_read_u32(np, "type", &display->type);
+	of_property_read_u16(np, "width", &display->width);
+	of_property_read_u16(np, "height", &display->height);
+	of_property_read_u32(np, "pixclock", &display->pixclock);
+	of_property_read_u16(np, "xres", &display->xres);
+	of_property_read_u16(np, "yres", &display->yres);
+	of_property_read_u16(np, "bpp", &display->bpp);
+	of_property_read_u16(np, "left_margin", &display->left_margin);
+	of_property_read_u16(np, "right_margin", &display->right_margin);
+	of_property_read_u16(np, "hsync_len", &display->hsync_len);
+	of_property_read_u16(np, "upper_margin", &display->upper_margin);
+	of_property_read_u16(np, "lower_margin", &display->lower_margin);
+	of_property_read_u16(np, "vsync_len", &display->vsync_len);
+
+	pr_debug("%s:       lcdcon5:  0x%lx\n", __func__, display->lcdcon5);
+	pr_debug("%s:          type:  0x%x\n", __func__, display->type);
+	pr_debug("%s:         width:  0x%x\n", __func__, display->width);
+	pr_debug("%s:        height:  0x%x\n", __func__, display->height);
+	pr_debug("%s:      pixclock:  0x%x\n", __func__, display->pixclock);
+	pr_debug("%s:          xres:  0x%x\n", __func__, display->xres);
+	pr_debug("%s:          yres:  0x%x\n", __func__, display->yres);
+	pr_debug("%s:           bpp:  0x%x\n", __func__, display->bpp);
+	pr_debug("%s:   left_margin:  0x%x\n", __func__, display->left_margin);
+	pr_debug("%s:  right_margin:  0x%x\n", __func__, display->right_margin);
+	pr_debug("%s:     hsync_len:  0x%x\n", __func__, display->hsync_len);
+	pr_debug("%s:  upper_margin:  0x%x\n", __func__, display->upper_margin);
+	pr_debug("%s:  lower_margin:  0x%x\n", __func__, display->lower_margin);
+	pr_debug("%s:     vsync_len:  0x%x\n", __func__, display->vsync_len);
+		
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(&pdev->dev, "no irq for device\n");
@@ -918,7 +946,7 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 	for (i = 0; i < 256; i++)
 		info->palette_buffer[i] = PALETTE_BUFF_CLEAR;
 
-	ret = request_irq(irq, s3c2410fb_irq, 0, pdev->name, info);
+	ret = devm_request_irq(dev, irq, s3c2410fb_irq, 0, pdev->name, info);
 	if (ret) {
 		dev_err(&pdev->dev, "cannot get irq %d - err %d\n", irq, ret);
 		ret = -EBUSY;
@@ -929,7 +957,7 @@ static int s3c24xxfb_probe(struct platform_device *pdev,
 	if (IS_ERR(info->clk)) {
 		dev_err(&pdev->dev, "failed to get lcd clock source\n");
 		ret = PTR_ERR(info->clk);
-		goto release_irq;
+		goto release_regs;
 	}
 
 	clk_prepare_enable(info->clk);
@@ -998,8 +1026,6 @@ free_video_memory:
 release_clock:
 	clk_disable_unprepare(info->clk);
 	clk_put(info->clk);
-release_irq:
-	free_irq(irq, info);
 release_regs:
 	iounmap(info->io);
 release_mem:
@@ -1097,6 +1123,11 @@ static int s3c2410fb_resume(struct platform_device *dev)
 #define s3c2410fb_resume  NULL
 #endif
 
+static const struct of_device_id tq2440_lcd_match[] = {
+	{ .compatible = "tq2440,lcd", .data = (void *)0 },
+	{},
+};
+
 static struct platform_driver s3c2410fb_driver = {
 	.probe		= s3c2410fb_probe,
 	.remove		= s3c2410fb_remove,
@@ -1104,6 +1135,7 @@ static struct platform_driver s3c2410fb_driver = {
 	.resume		= s3c2410fb_resume,
 	.driver		= {
 		.name	= "s3c2410-lcd",
+		.of_match_table = of_match_ptr(tq2440_lcd_match),
 	},
 };
 
