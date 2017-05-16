@@ -3,8 +3,7 @@
 NAME:tq2440_ts.c
 COPYRIGHT:www.embedsky.net
 
-*************************************/
-#define DEBUG
+ *************************************/
 #include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -28,11 +27,11 @@ COPYRIGHT:www.embedsky.net
 #define S3C2410TSVERSION	0x0101
 
 #define WAIT4INT(x)  (((x)<<8) | \
-		     S3C2410_ADCTSC_YM_SEN | S3C2410_ADCTSC_YP_SEN | S3C2410_ADCTSC_XP_SEN | \
-		     S3C2410_ADCTSC_XY_PST(3))
+	S3C2410_ADCTSC_YM_SEN | S3C2410_ADCTSC_YP_SEN | S3C2410_ADCTSC_XP_SEN | \
+	S3C2410_ADCTSC_XY_PST(3))
 
 #define AUTOPST	     (S3C2410_ADCTSC_YM_SEN | S3C2410_ADCTSC_YP_SEN | S3C2410_ADCTSC_XP_SEN | \
-		     S3C2410_ADCTSC_AUTO_PST | S3C2410_ADCTSC_XY_PST(0))
+	S3C2410_ADCTSC_AUTO_PST | S3C2410_ADCTSC_XY_PST(0))
 
 static char *tq2440ts_name = "TQ2440 TouchScreen";
 
@@ -45,56 +44,53 @@ static void __iomem *base_addr;
 
 static void touch_timer_fire(unsigned long data)
 {
-  	u32 data0;
-  	u32 data1;
+	u32 data0;
+	u32 data1;
 	int updown;
 
-  	data0 = readl(base_addr+S3C2410_ADCDAT0);
-  	data1 = readl(base_addr+S3C2410_ADCDAT1);
+	data0 = readl(base_addr+S3C2410_ADCDAT0);
+	data1 = readl(base_addr+S3C2410_ADCDAT1);
 
- 	updown = (!(data0 & S3C2410_ADCDAT0_UPDOWN)) && (!(data1 & S3C2410_ADCDAT0_UPDOWN));
+	updown = (!(data0 & S3C2410_ADCDAT0_UPDOWN)) && (!(data1 & S3C2410_ADCDAT0_UPDOWN));
 
- 	if (updown) {
- 		if (count != 0)
- 		{
+	if (updown) {
+		if (count != 0) {
 			long tmp;
-                                                                                                 
+
 			tmp = xp;
 			xp = yp;
 			yp = tmp;
-                                                                                                 
-                        xp >>= 2;
-                        yp >>= 2;
 
- 			input_report_abs(idev, ABS_X, xp);
- 			input_report_abs(idev, ABS_Y, yp);
+			xp >>= 2;
+			yp >>= 2;
 
- 			input_report_key(idev, BTN_TOUCH, 1);
+			input_report_abs(idev, ABS_X, xp);
+			input_report_abs(idev, ABS_Y, yp);
+
+			input_report_key(idev, BTN_TOUCH, 1);
 			input_report_abs(idev, ABS_PRESSURE, 1);
- 			input_sync(idev);
- 		}
+			input_sync(idev);
+		}
 
- 		xp = 0;
- 		yp = 0;
- 		count = 0;
+		xp = 0;
+		yp = 0;
+		count = 0;
 
- 		writel(S3C2410_ADCTSC_PULL_UP_DISABLE | AUTOPST, base_addr+S3C2410_ADCTSC);
- 		writel(readl(base_addr+S3C2410_ADCCON) | S3C2410_ADCCON_ENABLE_START, base_addr+S3C2410_ADCCON);
- 	}
- 	else
- 	{
- 		count = 0;
+		writel(S3C2410_ADCTSC_PULL_UP_DISABLE | AUTOPST, base_addr+S3C2410_ADCTSC);
+		writel(readl(base_addr+S3C2410_ADCCON) | S3C2410_ADCCON_ENABLE_START, base_addr+S3C2410_ADCCON);
+	} else {
+		count = 0;
 
- 		input_report_key(idev, BTN_TOUCH, 0);
- 		input_report_abs(idev, ABS_PRESSURE, 0);
- 		input_sync(idev);
+		input_report_key(idev, BTN_TOUCH, 0);
+		input_report_abs(idev, ABS_PRESSURE, 0);
+		input_sync(idev);
 
- 		writel(WAIT4INT(0), base_addr+S3C2410_ADCTSC);
- 	}
+		writel(WAIT4INT(0), base_addr+S3C2410_ADCTSC);
+	}
 }
 
 static struct timer_list touch_timer =
-		TIMER_INITIALIZER(touch_timer_fire, 0, 0);
+TIMER_INITIALIZER(touch_timer_fire, 0, 0);
 
 static irqreturn_t stylus_updown(int irq, void *dev_id)
 {
@@ -113,7 +109,6 @@ static irqreturn_t stylus_updown(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-
 static irqreturn_t stylus_action(int irq, void *dev_id)
 {
 	u32 data0;
@@ -126,13 +121,10 @@ static irqreturn_t stylus_action(int irq, void *dev_id)
 	yp += data1 & S3C2410_ADCDAT1_YPDATA_MASK;
 	count++;
 
-	if (count < (1<<2))
-	{
+	if (count < (1<<2)) {
 		writel(S3C2410_ADCTSC_PULL_UP_DISABLE | AUTOPST, base_addr+S3C2410_ADCTSC);
 		writel(readl(base_addr+S3C2410_ADCCON) | S3C2410_ADCCON_ENABLE_START, base_addr+S3C2410_ADCCON);
-	}
-	else
-	{
+	} else {
 		mod_timer(&touch_timer, jiffies+1);
 		writel(WAIT4INT(1), base_addr+S3C2410_ADCTSC);
 	}
@@ -190,8 +182,11 @@ static int tq2440ts_probe(struct platform_device *pdev)
 	}
 
 	idev = input_dev;
-	idev->evbit[0] = BIT(EV_SYN) | BIT(EV_KEY) | BIT(EV_ABS);
-	idev->keybit[BITS_TO_LONGS(BTN_TOUCH)] = BIT(BTN_TOUCH);
+	__set_bit(EV_SYN, idev->evbit);
+	__set_bit(EV_KEY, idev->evbit);
+	__set_bit(EV_ABS, idev->evbit);
+	__set_bit(BTN_TOUCH, idev->keybit);
+
 	input_set_abs_params(idev, ABS_X, 0, 0x3FF, 0, 0);
 	input_set_abs_params(idev, ABS_Y, 0, 0x3FF, 0, 0);
 	input_set_abs_params(idev, ABS_PRESSURE, 0, 1, 0, 0);
@@ -234,8 +229,6 @@ err:
 	clk_disable(adc_clock);
 	return ret;
 }
-
-
 
 static const struct of_device_id tq2440ts_match[] = {
 	{ .compatible = "tq2440,ts", .data = (void *)0 },
