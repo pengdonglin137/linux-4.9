@@ -152,8 +152,8 @@ static int tq2440ts_probe(struct platform_device *pdev)
 		dev_err(dev, "cannot get clock\n");
 		return -ENOENT;
 	}
-	clk_prepare(adc_clock);
-	clk_enable(adc_clock);
+
+	clk_prepare_enable(adc_clock);
 
 	dev_dbg(dev, "get mem\n");
 	tsmem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "adc_ts_physical");
