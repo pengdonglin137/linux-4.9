@@ -30,21 +30,6 @@
 		bootargs = "root=/dev/ram0 rw rootfstype=ext2 console=ttySAC0,115200n8 init=/linuxrc ignore_loglevel earlyprintk";
 	};
 
-	clocks {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		xti: oscillator@0 {
-			compatible = "fixed-clock";
-			reg = <0>;
-			clock-frequency = <12000000>;
-			clock-output-names = "xti";
-			#clock-cells = <0>;
-		};
-	};
-
-
 	srom-cs4@20000000 {
 		compatible = "simple-bus";
 		#address-cells = <1>;

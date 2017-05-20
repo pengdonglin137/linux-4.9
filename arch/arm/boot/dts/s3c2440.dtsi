@@ -25,6 +25,13 @@
 		};
 	};
 
+	xti: xti_clock {
+		compatible = "fixed-clock";
+		clock-frequency = <12000000>;
+		clock-output-names = "xti";
+		#clock-cells = <0>;
+	};
+
 	clocks: clock-controller@4c000000 {
 		compatible = "samsung,s3c2440-clock";
 		reg = <0x4c000000 0x20>;
