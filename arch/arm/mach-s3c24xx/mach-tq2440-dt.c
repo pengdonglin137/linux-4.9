@@ -1,6 +1,5 @@
 #include <linux/clocksource.h>
 #include <linux/irqchip.h>
-#include <linux/serial_s3c.h>
 
 #include <asm/mach/arch.h>
 #include <mach/map.h>

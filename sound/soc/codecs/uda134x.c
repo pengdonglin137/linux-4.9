@@ -16,6 +16,8 @@
 #include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/of.h>
+#include <linux/of_gpio.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
@@ -542,20 +544,78 @@ static const struct regmap_config uda134x_regmap_config = {
 	.reg_write = uda134x_regmap_write,
 };
 
+
+static int uda134x_parse_dt(struct device *dev, struct uda134x_platform_data *pd)
+{
+	struct l3_pins *l3 = &pd->l3;
+	struct device_node *nd = dev->of_node;
+	int ret = 0;
+
+	l3->gpio_clk = of_get_named_gpio(nd, "uda,clk_gpio", 0);
+	if (l3->gpio_clk < 0) {
+		dev_err(dev, "%s failed to get clk gpio.\n", __func__);
+		return -EINVAL;
+	}
+
+	l3->gpio_data = of_get_named_gpio(nd, "uda,data_gpio", 0);
+	if (l3->gpio_data < 0) {
+		dev_err(dev, "%s failed to get data gpio.\n", __func__);
+		return -EINVAL;
+	}
+
+	l3->gpio_mode = of_get_named_gpio(nd, "uda,mode_gpio", 0);
+	if (l3->gpio_mode < 0) {
+		dev_err(dev, "%s failed to get mode gpio.\n", __func__);
+		return -EINVAL;
+	}
+
+	l3->use_gpios = of_property_read_bool(nd, "uda,use_gpios");
+	l3->data_hold = of_property_read_bool(nd, "uda,data_hold");
+	l3->data_setup = of_property_read_bool(nd, "uda,data_setup");
+	l3->clock_high = of_property_read_bool(nd, "uda,clock_high");
+	l3->mode_hold = of_property_read_bool(nd, "uda,mode_hold");
+	l3->mode = of_property_read_bool(nd, "uda,mode");
+	l3->mode_setup = of_property_read_bool(nd, "uda,mode_setup");
+
+	ret = of_property_read_u32(nd, "uda,model", &pd->model);
+	if (ret < 0) {
+		dev_err(dev, "%s failed to parse uda,model.\n", __func__);
+		return -EINVAL;
+	}
+
+	dev_info(dev, "%s parse successfully.\n", __func__);
+	return ret;
+}
+
 static int uda134x_codec_probe(struct platform_device *pdev)
 {
-	struct uda134x_platform_data *pd = pdev->dev.platform_data;
+	struct uda134x_platform_data *pd;
+	struct device *dev = &pdev->dev;
+	struct device_node *nd = dev->of_node;
 	struct uda134x_priv *uda134x;
 	int ret;
 
+	dev_info(dev, "%s enter.\n", __func__);
+	if (!nd) {
+		dev_err(dev, "%s of node is null\n", __func__);
+		return -EINVAL;
+	}
+
+	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
 	if (!pd) {
-		dev_err(&pdev->dev, "Missing L3 bitbang function\n");
-		return -ENODEV;
+		dev_err(dev, "can not alloc memory\n");
+		return -ENOMEM;
 	}
 
 	uda134x = devm_kzalloc(&pdev->dev, sizeof(*uda134x), GFP_KERNEL);
 	if (!uda134x)
 		return -ENOMEM;
+
+	ret = uda134x_parse_dt(dev, pd);
+	if (ret < 0){
+		dev_err(dev, "%s parse dt failed.\n", __func__);
+		return -EINVAL;
+	}
 
 	uda134x->pd = pd;
 	platform_set_drvdata(pdev, uda134x);
@@ -581,9 +641,16 @@ static int uda134x_codec_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id uda134x_of_match[] = {
+	{ .compatible = "uda134x-codec", },
+	{ }
+};
+MODULE_DEVICE_TABLE(of, uda134x_of_match);
+
 static struct platform_driver uda134x_codec_driver = {
 	.driver = {
 		.name = "uda134x-codec",
+		.of_match_table = of_match_ptr(uda134x_of_match),
 	},
 	.probe = uda134x_codec_probe,
 	.remove = uda134x_codec_remove,

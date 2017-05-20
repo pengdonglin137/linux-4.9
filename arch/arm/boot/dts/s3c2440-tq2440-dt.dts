@@ -114,6 +114,48 @@
 		clocks = <&clocks PCLK_ADC>;
 		clock-names = "adc";
 	};
+
+	s3c2410-dma@4B000000 {
+		compatible = "s3c24xx-dma";
+		reg = <0x4B000000 0x1000>;
+		interrupts = <0 0 17 3>, <0 0 18 3>,
+				<0 0 19 3>, <0 0 20 3>;
+	};
+
+	s3c2440_iis@55000000 {
+		compatible = "s3c24xx-iis";
+		reg = <0x55000000 0x100>;
+		clocks = <&clocks PCLK_I2S>;
+		clock-names = "iis";
+		pinctrl-names = "default";
+		pinctrl-0 = <&s3c2440_iis_pinctrl>;
+	};
+
+	s3c24xx_uda134x {
+		compatible = "s3c24xx_uda134x";
+		clocks = <&clocks MPLL>, <&clocks PCLK_I2S>;
+		clock-names = "mpll", "iis";
+	};
+
+	uda134x-codec {
+		compatible = "uda134x-codec";
+		pinctrl-names = "default";
+		pinctrl-0 = <&uda1340_codec_pinctrl>;
+
+		uda,clk_gpio  = <&gpb 4 GPIO_ACTIVE_LOW>;
+		uda,data_gpio = <&gpb 3 GPIO_ACTIVE_LOW>;
+		uda,mode_gpio = <&gpb 2 GPIO_ACTIVE_LOW>;
+
+		uda,use_gpios;
+		uda,data_hold;
+		uda,data_setup;
+		uda,clock_high;
+		uda,mode_hold;
+		uda,mode;
+		uda,mode_setup;
+
+		uda,model = <2>;  //UDA134X_UDA1341
+	};
 };
 
 &watchdog {

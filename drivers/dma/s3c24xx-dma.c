@@ -37,6 +37,8 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/platform_data/dma-s3c24xx.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 
 #include "dmaengine.h"
 #include "virt-dma.h"
@@ -1183,15 +1185,19 @@ static struct soc_data *s3c24xx_dma_get_soc_data(struct platform_device *pdev)
 			 platform_get_device_id(pdev)->driver_data;
 }
 
+extern int s3c2440_dma_pdev_fix(struct platform_device *pdev);
 static int s3c24xx_dma_probe(struct platform_device *pdev)
 {
-	const struct s3c24xx_dma_platdata *pdata = dev_get_platdata(&pdev->dev);
+	const struct s3c24xx_dma_platdata *pdata;
 	struct s3c24xx_dma_engine *s3cdma;
 	struct soc_data *sdata;
 	struct resource *res;
 	int ret;
 	int i;
 
+	s3c2440_dma_pdev_fix(pdev);
+	pdev->id_entry = &s3c24xx_dma_driver_ids[0];
+	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
 		dev_err(&pdev->dev, "platform data missing\n");
 		return -ENODEV;
@@ -1401,9 +1407,19 @@ static int s3c24xx_dma_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id s3c24xx_dma_dt_ids[] = {
+	{
+		.compatible = "s3c24xx-dma",
+	}, {
+		/* sentinel */
+	}
+};
+MODULE_DEVICE_TABLE(of, s3c24xx_dma_dt_ids);
+
 static struct platform_driver s3c24xx_dma_driver = {
 	.driver		= {
 		.name	= "s3c24xx-dma",
+		.of_match_table = of_match_ptr(s3c24xx_dma_dt_ids),
 	},
 	.id_table	= s3c24xx_dma_driver_ids,
 	.probe		= s3c24xx_dma_probe,

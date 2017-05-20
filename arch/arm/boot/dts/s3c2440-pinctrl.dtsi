@@ -96,4 +96,14 @@
 		samsung,pins = "gpg-4";
 		samsung,pin-function = <3>;
 	};
+
+	uda1340_codec_pinctrl: uda1340_codec_pinctrl {
+		samsung,pins = "gpb-4", "gpb-3", "gpb-2";
+		samsung,pin-function = <1>;
+	};
+
+	s3c2440_iis_pinctrl: s3c2440_iis_pinctrl {
+		samsung,pins = "gpe-0", "gpe-1", "gpe-2", "gpe-3", "gpe-4";
+		samsung,pin-function = <2>;
+	};
 };
