@@ -1190,6 +1190,10 @@ static struct of_dma_filter_info s3c24xx_dma_info = {
 	.filter_fn = s3c24xx_dma_filter,
 };
 
+#define S3C2440_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
+				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
+				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
+
 extern int s3c2440_dma_pdev_fix(struct platform_device *pdev);
 static int s3c24xx_dma_probe(struct platform_device *pdev)
 {
@@ -1312,6 +1316,10 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	s3cdma->slave.device_prep_dma_cyclic = s3c24xx_dma_prep_dma_cyclic;
 	s3cdma->slave.device_config = s3c24xx_dma_set_runtime_config;
 	s3cdma->slave.device_terminate_all = s3c24xx_dma_terminate_all;
+	s3cdma->slave.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+	s3cdma->slave.src_addr_widths = S3C2440_DMA_BUSWIDTHS;
+	s3cdma->slave.dst_addr_widths = S3C2440_DMA_BUSWIDTHS;
+
 	s3cdma->slave.filter.map = pdata->slave_map;
 	s3cdma->slave.filter.mapcnt = pdata->slavecnt;
 	s3cdma->slave.filter.fn = s3c24xx_dma_filter;
