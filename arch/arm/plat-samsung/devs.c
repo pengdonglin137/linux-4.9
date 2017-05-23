@@ -599,8 +599,6 @@ int s3c24xx_iis_pdev_fix(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 
 	dev_info(dev, "%s enter.\n", __func__);
-	dev->dma_mask = &samsung_device_dma_mask;
-	dev->coherent_dma_mask = DMA_BIT_MASK(32);
 	dev->platform_data = &s3c_iis_platdata;
 
 	return 0;

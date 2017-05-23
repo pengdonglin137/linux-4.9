@@ -39,6 +39,7 @@
 #include <linux/platform_data/dma-s3c24xx.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/of_dma.h>
 
 #include "dmaengine.h"
 #include "virt-dma.h"
@@ -1185,6 +1186,10 @@ static struct soc_data *s3c24xx_dma_get_soc_data(struct platform_device *pdev)
 			 platform_get_device_id(pdev)->driver_data;
 }
 
+static struct of_dma_filter_info s3c24xx_dma_info = {
+	.filter_fn = s3c24xx_dma_filter,
+};
+
 extern int s3c2440_dma_pdev_fix(struct platform_device *pdev);
 static int s3c24xx_dma_probe(struct platform_device *pdev)
 {
@@ -1347,12 +1352,22 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 		goto err_slave_reg;
 	}
 
+	s3c24xx_dma_info.dma_cap = s3cdma->slave.cap_mask;
+	ret = of_dma_controller_register(pdev->dev.of_node,
+				of_dma_simple_xlate, &s3c24xx_dma_info);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to register DMA controller\n");
+		goto err_of_dma_reg;
+	}
+
 	platform_set_drvdata(pdev, s3cdma);
 	dev_info(&pdev->dev, "Loaded dma driver with %d physical channels\n",
 		 pdata->num_phy_channels);
 
 	return 0;
 
+err_of_dma_reg:
+	dma_async_device_unregister(&s3cdma->slave);
 err_slave_reg:
 	dma_async_device_unregister(&s3cdma->memcpy);
 err_memcpy_reg:
@@ -1431,13 +1446,14 @@ module_platform_driver(s3c24xx_dma_driver);
 bool s3c24xx_dma_filter(struct dma_chan *chan, void *param)
 {
 	struct s3c24xx_dma_chan *s3cchan;
+	int ch = *(uintptr_t *)param;
 
 	if (chan->device->dev->driver != &s3c24xx_dma_driver.driver)
 		return false;
 
 	s3cchan = to_s3c24xx_dma_chan(chan);
 
-	return s3cchan->id == (uintptr_t)param;
+	return s3cchan->id == ch;
 }
 EXPORT_SYMBOL(s3c24xx_dma_filter);
 
