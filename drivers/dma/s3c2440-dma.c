@@ -33,7 +33,6 @@
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
 #include <linux/interrupt.h>
-#include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/platform_data/dma-s3c24xx.h>
@@ -181,7 +180,6 @@ struct s3c2440_dma_phy {
 	bool				valid;
 	void __iomem			*base;
 	int				irq;
-	struct clk			*clk;
 	spinlock_t			lock;
 	struct s3c2440_dma_chan		*serving;
 	struct s3c2440_dma_engine	*host;
