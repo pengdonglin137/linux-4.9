@@ -459,6 +459,18 @@ config S3C24XX_DMAC
 	  The DMA controller can transfer data from memory to peripheral,
 	  periphal to memory, periphal to periphal and memory to memory.
 
+config S3C2440_DMAC
+	bool "Samsung S3C2440 DMA support"
+	depends on ARCH_S3C24XX || COMPILE_TEST
+	select DMA_ENGINE
+	select DMA_VIRTUAL_CHANNELS
+	help
+	  Support for the Samsung S3C2440 DMA controller driver. The
+	  DMA controller is having multiple DMA channels which can be
+	  configured for different peripherals like audio, UART, SPI.
+	  The DMA controller can transfer data from memory to peripheral,
+	  periphal to memory, periphal to periphal and memory to memory.
+
 config TXX9_DMAC
 	tristate "Toshiba TXx9 SoC DMA support"
 	depends on MACH_TX49XX || MACH_TX39XX
