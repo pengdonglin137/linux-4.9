@@ -478,7 +478,7 @@ static const struct dma_slave_map s3c2440_dma_slave_map[] = {
 	{ "s3c-hsudc", "tx3", (void *)DMACH_USB_EP4 }
 };
 
-static struct s3c24xx_dma_platdata s3c2440_dma_platdata = {
+struct s3c24xx_dma_platdata s3c2440_dma_platdata = {
 	.num_phy_channels = 4,
 	.channels = s3c2440_dma_channels,
 	.num_channels = DMACH_MAX,
