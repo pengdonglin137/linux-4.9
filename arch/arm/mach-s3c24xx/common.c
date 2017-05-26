@@ -408,7 +408,7 @@ struct platform_device s3c2412_device_dma = {
 #endif
 
 #if defined(CONFIG_CPU_S3C2440)
-static struct s3c24xx_dma_channel s3c2440_dma_channels[DMACH_MAX] = {
+static struct s3c24xx_dma_channel s3c2440_dma_channels[] = {
 	[DMACH_XD0] = { S3C24XX_DMA_AHB, true, S3C24XX_DMA_CHANREQ(0, 0), },
 	[DMACH_XD1] = { S3C24XX_DMA_AHB, true, S3C24XX_DMA_CHANREQ(0, 1), },
 	[DMACH_SDI] = { S3C24XX_DMA_APB, false, S3C24XX_DMA_CHANREQ(2, 0) |
@@ -481,7 +481,8 @@ static const struct dma_slave_map s3c2440_dma_slave_map[] = {
 struct s3c24xx_dma_platdata s3c2440_dma_platdata = {
 	.num_phy_channels = 4,
 	.channels = s3c2440_dma_channels,
-	.num_channels = DMACH_MAX,
+	//.num_channels = ARRAY_SIZE(s3c2440_dma_channels),
+	.num_channels = 100,
 	.slave_map = s3c2440_dma_slave_map,
 	.slavecnt = ARRAY_SIZE(s3c2440_dma_slave_map),
 };

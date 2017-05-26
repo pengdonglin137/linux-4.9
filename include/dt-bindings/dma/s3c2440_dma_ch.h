@@ -19,14 +19,5 @@
 #define DMACH_USB_EP2        15
 #define DMACH_USB_EP3        16
 #define DMACH_USB_EP4        17
-#define DMACH_UART0_SRC2     18
-#define DMACH_UART1_SRC2     19
-#define DMACH_UART2_SRC2     20
-#define DMACH_UART3          21
-#define DMACH_UART3_SRC2     22
-#define DMACH_SPI0_TX        23
-#define DMACH_SPI0_RX        24
-#define DMACH_SPI1_TX        25
-#define DMACH_SPI1_RX        26
 
 #endif

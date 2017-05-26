@@ -245,8 +245,14 @@ static bool s3c2440_dma_phy_valid(struct s3c2440_dma_chan *s3cchan,
 {
 	struct s3c2440_dma_engine *s3cdma = s3cchan->host;
 	const struct s3c24xx_dma_platdata *pdata = s3cdma->pdata;
-	struct s3c24xx_dma_channel *cdata = &pdata->channels[s3cchan->id];
+	struct s3c24xx_dma_channel *cdata;
+	struct dma_slave_config *cfg = &s3cchan->cfg;
 	int phyvalid;
+
+	if (cfg->direction == DMA_MEM_TO_MEM)
+		return true;
+	else
+		cdata = &pdata->channels[s3cchan->id];
 
 	phyvalid = (cdata->chansel >> (phy->id * s3c2440_CHANSEL_WIDTH));
 	return (phyvalid & s3c2440_CHANSEL_VALID) ? true : false;
@@ -417,15 +423,17 @@ static void s3c2440_dma_start_next_sg(struct s3c2440_dma_chan *s3cchan,
 		break;
 	}
 
-	cdata = &pdata->channels[s3cchan->id];
-	csel = cdata->chansel >> (phy->id * s3c2440_CHANSEL_WIDTH);
-
-	csel &= s3c2440_CHANSEL_REQ_MASK;
-	dcon |= csel << s3c2440_DCON_HWSRC_SHIFT;
-	if (direction == DMA_MEM_TO_MEM) // mem to mem use soft trigger
+	if (direction == DMA_MEM_TO_MEM) {
+		// mem to mem use soft trigger and ignore csel
 		dcon &= ~s3c2440_DCON_HWTRIG;
-	else // mem to dev or dev to mem use hw trigger
+	} else {// mem to dev or dev to mem use hw trigger
+		cdata = &pdata->channels[s3cchan->id];
+		csel = cdata->chansel >> (phy->id * s3c2440_CHANSEL_WIDTH);
+
+		csel &= s3c2440_CHANSEL_REQ_MASK;
+		dcon |= csel << s3c2440_DCON_HWSRC_SHIFT;
 		dcon |= s3c2440_DCON_HWTRIG;
+	}
 
 	writel_relaxed(dsg->src_addr, phy->base + s3c2440_DISRC);
 	writel_relaxed(txd->disrcc, phy->base + s3c2440_DISRCC);
