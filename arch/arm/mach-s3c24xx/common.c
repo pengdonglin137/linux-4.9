@@ -481,8 +481,7 @@ static const struct dma_slave_map s3c2440_dma_slave_map[] = {
 struct s3c24xx_dma_platdata s3c2440_dma_platdata = {
 	.num_phy_channels = 4,
 	.channels = s3c2440_dma_channels,
-	//.num_channels = ARRAY_SIZE(s3c2440_dma_channels),
-	.num_channels = 100,
+	.num_channels = ARRAY_SIZE(s3c2440_dma_channels),
 	.slave_map = s3c2440_dma_slave_map,
 	.slavecnt = ARRAY_SIZE(s3c2440_dma_slave_map),
 };
