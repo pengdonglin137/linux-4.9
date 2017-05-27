@@ -102,7 +102,7 @@
 	};
 
 	dma: s3c2410-dma@4B000000 {
-		compatible = "tq2440, s3c2440-dma";
+		compatible = "s3c2440-dma";
 		reg = <0x4B000000 0x1000>;
 		interrupts = <0 0 17 3>, <0 0 18 3>,
 				<0 0 19 3>, <0 0 20 3>;

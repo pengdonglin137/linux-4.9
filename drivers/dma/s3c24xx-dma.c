@@ -1194,36 +1194,56 @@ static struct of_dma_filter_info s3c24xx_dma_info = {
 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
 
-extern int s3c2440_dma_pdev_fix(struct platform_device *pdev);
+static const struct of_device_id s3c24xx_dma_dt_ids[];
+
 static int s3c24xx_dma_probe(struct platform_device *pdev)
 {
-	const struct s3c24xx_dma_platdata *pdata;
+	const struct s3c24xx_dma_platdata *pdata = NULL;
 	struct s3c24xx_dma_engine *s3cdma;
 	struct soc_data *sdata;
 	struct resource *res;
+	struct device *dev = &pdev->dev;
+	struct device_node *np = dev->of_node;
+	const struct of_device_id *match;
 	int ret;
 	int i;
 
-	s3c2440_dma_pdev_fix(pdev);
-	pdev->id_entry = &s3c24xx_dma_driver_ids[0];
-	pdata = dev_get_platdata(&pdev->dev);
+	if (!np) {
+		dev_err(dev, "%s: of node is null.\n", __func__);
+		return -EINVAL;
+	}
+
+	match = of_match_node(s3c24xx_dma_dt_ids, np);
+	if (!match) {
+		dev_err(dev, "%s: can not find match item\n", __func__);
+		return -EINVAL;
+	}
+
+	if (!strcmp("s3c2440-dma", match->compatible))
+		sdata = &soc_s3c2410;
+	else if (!strcmp("s3c2412-dma", match->compatible))
+		sdata = &soc_s3c2412;
+	else if (!strcmp("s3c2443-dma", match->compatible))
+		sdata = &soc_s3c2443;
+	else {
+		dev_err(dev, "%s: sdata is NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	pdata = match->data;
 	if (!pdata) {
-		dev_err(&pdev->dev, "platform data missing\n");
+		dev_err(dev, "platform data missing\n");
 		return -ENODEV;
 	}
 
 	/* Basic sanity check */
 	if (pdata->num_phy_channels > MAX_DMA_CHANNELS) {
-		dev_err(&pdev->dev, "to many dma channels %d, max %d\n",
+		dev_err(dev, "to many dma channels %d, max %d\n",
 			pdata->num_phy_channels, MAX_DMA_CHANNELS);
 		return -EINVAL;
 	}
 
-	sdata = s3c24xx_dma_get_soc_data(pdev);
-	if (!sdata)
-		return -EINVAL;
-
-	s3cdma = devm_kzalloc(&pdev->dev, sizeof(*s3cdma), GFP_KERNEL);
+	s3cdma = devm_kzalloc(dev, sizeof(*s3cdma), GFP_KERNEL);
 	if (!s3cdma)
 		return -ENOMEM;
 
@@ -1232,11 +1252,11 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	s3cdma->sdata = sdata;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	s3cdma->base = devm_ioremap_resource(&pdev->dev, res);
+	s3cdma->base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(s3cdma->base))
 		return PTR_ERR(s3cdma->base);
 
-	s3cdma->phy_chans = devm_kzalloc(&pdev->dev,
+	s3cdma->phy_chans = devm_kzalloc(dev,
 					      sizeof(struct s3c24xx_dma_phy) *
 							pdata->num_phy_channels,
 					      GFP_KERNEL);
@@ -1254,31 +1274,31 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 
 		phy->irq = platform_get_irq(pdev, i);
 		if (phy->irq < 0) {
-			dev_err(&pdev->dev, "failed to get irq %d, err %d\n",
+			dev_err(dev, "failed to get irq %d, err %d\n",
 				i, phy->irq);
 			continue;
 		}
 
-		ret = devm_request_irq(&pdev->dev, phy->irq, s3c24xx_dma_irq,
+		ret = devm_request_irq(dev, phy->irq, s3c24xx_dma_irq,
 				       0, pdev->name, phy);
 		if (ret) {
-			dev_err(&pdev->dev, "Unable to request irq for channel %d, error %d\n",
+			dev_err(dev, "Unable to request irq for channel %d, error %d\n",
 				i, ret);
 			continue;
 		}
 
 		if (sdata->has_clocks) {
 			sprintf(clk_name, "dma.%d", i);
-			phy->clk = devm_clk_get(&pdev->dev, clk_name);
+			phy->clk = devm_clk_get(dev, clk_name);
 			if (IS_ERR(phy->clk) && sdata->has_clocks) {
-				dev_err(&pdev->dev, "unable to acquire clock for channel %d, error %lu\n",
+				dev_err(dev, "unable to acquire clock for channel %d, error %lu\n",
 					i, PTR_ERR(phy->clk));
 				continue;
 			}
 
 			ret = clk_prepare(phy->clk);
 			if (ret) {
-				dev_err(&pdev->dev, "clock for phy %d failed, error %d\n",
+				dev_err(dev, "clock for phy %d failed, error %d\n",
 					i, ret);
 				continue;
 			}
@@ -1287,14 +1307,14 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 		spin_lock_init(&phy->lock);
 		phy->valid = true;
 
-		dev_dbg(&pdev->dev, "physical channel %d is %s\n",
+		dev_dbg(dev, "physical channel %d is %s\n",
 			i, s3c24xx_dma_phy_busy(phy) ? "BUSY" : "FREE");
 	}
 
 	/* Initialize memcpy engine */
 	dma_cap_set(DMA_MEMCPY, s3cdma->memcpy.cap_mask);
 	dma_cap_set(DMA_PRIVATE, s3cdma->memcpy.cap_mask);
-	s3cdma->memcpy.dev = &pdev->dev;
+	s3cdma->memcpy.dev = dev;
 	s3cdma->memcpy.device_free_chan_resources =
 					s3c24xx_dma_free_chan_resources;
 	s3cdma->memcpy.device_prep_dma_memcpy = s3c24xx_dma_prep_memcpy;
@@ -1307,7 +1327,7 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	dma_cap_set(DMA_SLAVE, s3cdma->slave.cap_mask);
 	dma_cap_set(DMA_CYCLIC, s3cdma->slave.cap_mask);
 	dma_cap_set(DMA_PRIVATE, s3cdma->slave.cap_mask);
-	s3cdma->slave.dev = &pdev->dev;
+	s3cdma->slave.dev = dev;
 	s3cdma->slave.device_free_chan_resources =
 					s3c24xx_dma_free_chan_resources;
 	s3cdma->slave.device_tx_status = s3c24xx_dma_tx_status;
@@ -1328,7 +1348,7 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	ret = s3c24xx_dma_init_virtual_channels(s3cdma, &s3cdma->memcpy,
 						pdata->num_phy_channels, false);
 	if (ret <= 0) {
-		dev_warn(&pdev->dev,
+		dev_warn(dev,
 			 "%s failed to enumerate memcpy channels - %d\n",
 			 __func__, ret);
 		goto err_memcpy;
@@ -1338,7 +1358,7 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	ret = s3c24xx_dma_init_virtual_channels(s3cdma, &s3cdma->slave,
 				pdata->num_channels, true);
 	if (ret <= 0) {
-		dev_warn(&pdev->dev,
+		dev_warn(dev,
 			"%s failed to enumerate slave channels - %d\n",
 				__func__, ret);
 		goto err_slave;
@@ -1346,7 +1366,7 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 
 	ret = dma_async_device_register(&s3cdma->memcpy);
 	if (ret) {
-		dev_warn(&pdev->dev,
+		dev_warn(dev,
 			"%s failed to register memcpy as an async device - %d\n",
 			__func__, ret);
 		goto err_memcpy_reg;
@@ -1354,22 +1374,22 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 
 	ret = dma_async_device_register(&s3cdma->slave);
 	if (ret) {
-		dev_warn(&pdev->dev,
+		dev_warn(dev,
 			"%s failed to register slave as an async device - %d\n",
 			__func__, ret);
 		goto err_slave_reg;
 	}
 
 	s3c24xx_dma_info.dma_cap = s3cdma->slave.cap_mask;
-	ret = of_dma_controller_register(pdev->dev.of_node,
+	ret = of_dma_controller_register(np,
 				of_dma_simple_xlate, &s3c24xx_dma_info);
 	if (ret) {
-		dev_err(&pdev->dev, "failed to register DMA controller\n");
+		dev_err(dev, "failed to register DMA controller\n");
 		goto err_of_dma_reg;
 	}
 
 	platform_set_drvdata(pdev, s3cdma);
-	dev_info(&pdev->dev, "Loaded dma driver with %d physical channels\n",
+	dev_info(dev, "Loaded dma driver with %d physical channels\n",
 		 pdata->num_phy_channels);
 
 	return 0;
@@ -1430,9 +1450,27 @@ static int s3c24xx_dma_remove(struct platform_device *pdev)
 	return 0;
 }
 
+extern struct s3c24xx_dma_platdata s3c2440_dma_platdata;
+#ifdef CONFIG_CPU_S3C2412
+extern struct s3c24xx_dma_platdata s3c2412_dma_platdata;
+#endif
+#ifdef CONFIG_CPU_S3C2443
+extern struct s3c24xx_dma_platdata s3c2443_dma_platdata;
+#endif
 static const struct of_device_id s3c24xx_dma_dt_ids[] = {
 	{
-		.compatible = "s3c24xx-dma",
+		.compatible = "s3c2440-dma",
+		.data = &s3c2440_dma_platdata,
+#ifdef CONFIG_CPU_S3C2412
+	}, {
+		.compatible = "s3c2412-dma",
+		.data = &s3c2412_dma_platdata,
+#endif
+#ifdef CONFIG_CPU_S3C2443
+	}, {
+		.compatible = "s3c2443-dma",
+		.data = &s3c2443_dma_platdata,
+#endif
 	}, {
 		/* sentinel */
 	}
@@ -1444,7 +1482,6 @@ static struct platform_driver s3c24xx_dma_driver = {
 		.name	= "s3c24xx-dma",
 		.of_match_table = of_match_ptr(s3c24xx_dma_dt_ids),
 	},
-	.id_table	= s3c24xx_dma_driver_ids,
 	.probe		= s3c24xx_dma_probe,
 	.remove		= s3c24xx_dma_remove,
 };
