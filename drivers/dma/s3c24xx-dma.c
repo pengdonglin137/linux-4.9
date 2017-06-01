@@ -1322,6 +1322,9 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	s3cdma->memcpy.device_issue_pending = s3c24xx_dma_issue_pending;
 	s3cdma->memcpy.device_config = s3c24xx_dma_set_runtime_config;
 	s3cdma->memcpy.device_terminate_all = s3c24xx_dma_terminate_all;
+	s3cdma->memcpy.directions = BIT(DMA_MEM_TO_MEM);
+	s3cdma->memcpy.src_addr_widths = S3C2440_DMA_BUSWIDTHS;
+	s3cdma->memcpy.dst_addr_widths = S3C2440_DMA_BUSWIDTHS;
 
 	/* Initialize slave engine for SoC internal dedicated peripherals */
 	dma_cap_set(DMA_SLAVE, s3cdma->slave.cap_mask);
