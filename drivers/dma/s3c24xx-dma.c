@@ -1343,10 +1343,6 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
 	s3cdma->slave.src_addr_widths = S3C2440_DMA_BUSWIDTHS;
 	s3cdma->slave.dst_addr_widths = S3C2440_DMA_BUSWIDTHS;
 
-	s3cdma->slave.filter.map = pdata->slave_map;
-	s3cdma->slave.filter.mapcnt = pdata->slavecnt;
-	s3cdma->slave.filter.fn = s3c24xx_dma_filter;
-
 	/* Register as many memcpy channels as there are physical channels */
 	ret = s3c24xx_dma_init_virtual_channels(s3cdma, &s3cdma->memcpy,
 						pdata->num_phy_channels, false);
