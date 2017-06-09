@@ -15,6 +15,17 @@ config PRINTK_TIME
 	  The behavior is also controlled by the kernel command line
 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
 
+config PRINTK_PROCINFO
+	bool "Show process information on printks"
+	depends on PRINTK
+	help
+	  Selecting this option causes process of the printk()
+	  messages to be added to the output of the syslog() system
+	  call and at the console.
+
+	  The behavior is also controlled by the kernel command line
+	  parameter printk.procinfo=1.
+
 config MESSAGE_LOGLEVEL_DEFAULT
 	int "Default message log level (1-7)"
 	range 1 7
