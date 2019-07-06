@@ -19,6 +19,8 @@
 #include <linux/io.h>
 #include <linux/gpio.h>
 #include <linux/module.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 
 #include <sound/soc.h>
 #include <sound/pcm_params.h>
@@ -371,8 +373,10 @@ static int s3c24xx_i2s_probe(struct snd_soc_dai *dai)
 	clk_prepare_enable(s3c24xx_i2s.iis_clk);
 
 	/* Configure the I2S pins (GPE0...GPE4) in correct mode */
+#if 0
 	s3c_gpio_cfgall_range(S3C2410_GPE(0), 5, S3C_GPIO_SFN(2),
 			      S3C_GPIO_PULL_NONE);
+#endif
 
 	writel(S3C2410_IISCON_IISEN, s3c24xx_i2s.regs + S3C2410_IISCON);
 
@@ -449,12 +453,17 @@ static const struct snd_soc_component_driver s3c24xx_i2s_component = {
 	.name		= "s3c24xx-i2s",
 };
 
+extern int s3c24xx_iis_pdev_fix(struct platform_device *pdev);
 static int s3c24xx_iis_dev_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct resource *res;
-	struct s3c_audio_pdata *pdata = dev_get_platdata(&pdev->dev);
+	struct s3c_audio_pdata *pdata;
 
+	dev_info(&pdev->dev, "%s enter.\n", __func__);
+
+	s3c24xx_iis_pdev_fix(pdev);
+	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
 		dev_err(&pdev->dev, "missing platform data");
 		return -ENXIO;
@@ -490,10 +499,19 @@ static int s3c24xx_iis_dev_probe(struct platform_device *pdev)
 	return ret;
 }
 
+static const struct of_device_id s3c24xx_iis_dt_ids[] = {
+	{
+		.compatible = "s3c24xx-iis",
+	} , {
+	}
+};
+MODULE_DEVICE_TABLE(of, s3c24xx_iis_dt_ids);
+
 static struct platform_driver s3c24xx_iis_driver = {
 	.probe  = s3c24xx_iis_dev_probe,
 	.driver = {
 		.name = "s3c24xx-iis",
+		.of_match_table = of_match_ptr(s3c24xx_iis_dt_ids),
 	},
 };
 

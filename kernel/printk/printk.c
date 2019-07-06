@@ -331,6 +331,7 @@ enum log_flags {
 };
 
 struct printk_log {
+	char pid[32];
 	u64 ts_nsec;		/* timestamp in nanoseconds */
 	u16 len;		/* length of entire record */
 	u16 text_len;		/* length of text buffer */
@@ -563,6 +564,8 @@ static int log_store(int facility, int level,
 
 	/* fill message */
 	msg = (struct printk_log *)(log_buf + log_next_idx);
+	scnprintf(msg->pid, sizeof(msg->pid), "%2d|%5d|%15s", smp_processor_id(),
+		task_pid_nr(current), current->comm);
 	memcpy(log_text(msg), text, text_len);
 	msg->text_len = text_len;
 	if (trunc_msg_len) {
@@ -1187,6 +1190,20 @@ static size_t print_time(u64 ts, char *buf)
 		       (unsigned long)ts, rem_nsec / 1000);
 }
 
+static bool printk_procinfo = IS_ENABLED(CONFIG_PRINTK_PROCINFO);
+module_param_named(procinfo, printk_procinfo, bool, S_IRUGO | S_IWUSR);
+
+static size_t print_procinfo(char *pid, char *buf)
+{
+	if (!printk_procinfo)
+		return 0;
+
+	if (!buf)
+		return snprintf(NULL, 0, "[%s] ", pid);
+
+	return sprintf(buf, "[%s] ", pid);
+}
+
 static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 {
 	size_t len = 0;
@@ -1207,6 +1224,7 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+	len += print_procinfo((char *)msg->pid, buf ? buf + len : NULL);
 	return len;
 }
 
@@ -1630,6 +1648,7 @@ static inline void printk_delay(void)
  */
 static struct cont {
 	char buf[LOG_LINE_MAX];
+	char pid[32];
 	size_t len;			/* length == 0 means unused buffer */
 	size_t cons;			/* bytes written to console */
 	struct task_struct *owner;	/* task of first print*/
@@ -1689,6 +1708,8 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 		cont.flags = flags;
 		cont.cons = 0;
 		cont.flushed = false;
+		scnprintf(cont.pid, sizeof(cont.pid), "%2d|%5d|%15s", smp_processor_id(),
+			task_pid_nr(current), current->comm);
 	}
 
 	memcpy(cont.buf + cont.len, text, len);
@@ -1714,6 +1735,7 @@ static size_t cont_print_text(char *text, size_t size)
 
 	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
 		textlen += print_time(cont.ts_nsec, text);
+		textlen += print_procinfo(cont.pid, text + textlen);
 		size -= textlen;
 	}
 

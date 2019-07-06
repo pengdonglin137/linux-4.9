@@ -593,6 +593,16 @@ struct platform_device s3c_device_iis = {
 		.platform_data		= &s3c_iis_platdata,
 	}
 };
+
+int s3c24xx_iis_pdev_fix(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+
+	dev_info(dev, "%s enter.\n", __func__);
+	dev->platform_data = &s3c_iis_platdata;
+
+	return 0;
+}
 #endif /* CONFIG_PLAT_S3C24XX */
 
 /* IDE CFCON */

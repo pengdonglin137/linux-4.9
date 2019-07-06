@@ -1,0 +1,229 @@
+/*
+ * SAMSUNG SMDK2416 board device tree source
+ *
+ * Copyright (c) 2013 Heiko Stuebner <heiko@sntech.de>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "s3c2440.dtsi"
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/dma/s3c2440_dma_ch.h>
+
+/ {
+	model = "TQ2440";
+	compatible = "samsung,s3c2440", "samsung,tq2440";
+
+	aliases {
+		i2c1 = &i2c_gpio_1;
+	};
+
+	memory {
+		reg =  <0x30000000 0x34000000>;
+	};
+
+	chosen {
+		/*bootargs = "noinitrd root=/dev/mtdblock3 init=/linuxrc console=ttySAC0,115200n8 earlyprintk";*/
+		bootargs = "root=/dev/ram0 rw rootfstype=ext2 console=ttySAC0,115200n8 init=/linuxrc ignore_loglevel earlyprintk";
+	};
+
+	srom-cs4@20000000 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0x20000000 0x8000000>;
+		ranges;
+
+		ethernet@20000000 {
+			compatible = "davicom,dm9000";
+			reg = <0x20000000 0x2 0x20000004 0x2>;
+			interrupt-parent = <&gpf>;
+			interrupts = <7 IRQ_TYPE_EDGE_RISING>;
+			local-mac-address = [00 00 de ad be ef];
+			davicom,no-eeprom;
+		};
+	};
+
+	i2c_gpio_1: i2c-gpio-1 {
+		compatible = "i2c-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpios = <&gpe 15 GPIO_ACTIVE_HIGH>,  // SDA
+			<&gpe 14 GPIO_ACTIVE_HIGH>;  // SCL
+		i2c-gpio,delay-us = <5>; // 100KHz
+		status = "disabled";
+
+		eeprom@50 {
+			compatible = "24c02";
+			reg = <0x50>;
+			pagesize = <32>;
+			status = "okay";
+		};
+	};
+
+	fb0: fb@4d000000{
+		compatible = "tq2440,lcd";
+		reg = <0x4D000000 0x60>;
+		interrupts = <0 0 16 3>;
+		clocks = <&clocks HCLK_LCD>;
+		clock-names = "lcd";
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd_pinctrl &lcd_backlight>;
+		status = "okay";
+
+		lcdcon5 = <0xb09>;
+		type = <0x60>;
+		width = /bits/ 16 <480>;
+		height = /bits/ 16 <272>;
+		pixclock = <100000>;
+		xres = /bits/ 16 <480>;
+		yres = /bits/ 16 <272>;
+		bpp = /bits/ 16 <16>;
+		left_margin = /bits/ 16 <2>;
+		right_margin =/bits/ 16  <2>;
+		hsync_len = /bits/ 16 <41>;
+		upper_margin = /bits/ 16 <2>;
+		lower_margin = /bits/ 16 <2>;
+		vsync_len = /bits/ 16 <10>;
+	};
+
+	tq2440ts@5800000 {
+		compatible = "tq2440,ts";
+		reg = <0x58000000 0x100>;
+		reg-names = "adc_ts_physical";
+		interrupts = <1 31 9 3>, <1 31 10 3>;
+		interrupt-names = "int_ts", "int_adc_s";
+		clocks = <&clocks PCLK_ADC>;
+		clock-names = "adc";
+	};
+
+	dma: s3c2410-dma@4B000000 {
+		compatible = "s3c2440-dma";
+		reg = <0x4B000000 0x1000>;
+		interrupts = <0 0 17 3>, <0 0 18 3>,
+				<0 0 19 3>, <0 0 20 3>;
+		#dma-cells = <1>;
+	};
+
+	s3c2440_iis@55000000 {
+		compatible = "s3c24xx-iis";
+		reg = <0x55000000 0x100>;
+		clocks = <&clocks PCLK_I2S>;
+		clock-names = "iis";
+		pinctrl-names = "default";
+		pinctrl-0 = <&s3c2440_iis_pinctrl>;
+		dmas = <&dma DMACH_I2S_IN>, <&dma DMACH_I2S_OUT>;
+		dma-names = "rx", "tx";
+	};
+
+	s3c24xx_uda134x {
+		compatible = "s3c24xx_uda134x";
+		clocks = <&clocks MPLL>, <&clocks PCLK_I2S>;
+		clock-names = "mpll", "iis";
+	};
+
+	uda134x-codec {
+		compatible = "uda134x-codec";
+		pinctrl-names = "default";
+		pinctrl-0 = <&uda1340_codec_pinctrl>;
+
+		uda,clk_gpio  = <&gpb 4 GPIO_ACTIVE_LOW>;
+		uda,data_gpio = <&gpb 3 GPIO_ACTIVE_LOW>;
+		uda,mode_gpio = <&gpb 2 GPIO_ACTIVE_LOW>;
+
+		uda,use_gpios;
+		uda,data_hold;
+		uda,data_setup;
+		uda,clock_high;
+		uda,mode_hold;
+		uda,mode;
+		uda,mode_setup;
+
+		uda,model = <2>;  //UDA134X_UDA1341
+	};
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&i2c {
+	status = "okay";
+	samsung,i2c-max-bus-freq = <200000>;
+
+	eeprom@50 {
+		compatible = "24c02";
+		reg = <0x50>;
+		pagesize = <32>;
+		status = "okay";
+	};
+};
+
+&nand0 {
+	status = "okay";
+	nand,tacls = <0xa>;
+	nand,twrph0 = <0x19>;
+	nand,twrph1 = <0xa>;
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	partitions {
+		/* MTD partition table */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		nr-chips = <1>;
+		set-name = "tq2440-0";
+
+		partition@0 {
+			label = "SPL";
+			reg = <0x0000000 0x100000>;
+			read-only;
+		};
+
+		partition@100000 {
+			label = "U-BOOT";
+			reg = <0x0100000 0x100000>;
+			read-only;
+		};
+
+		partition@200000 {
+			label = "PARAMS";
+			reg = <0x0200000 0x100000>;
+			read-only;
+		};
+
+		partition@300000 {
+			label = "KERNEL";
+			reg = <0x300000 0x500000>;
+			read-only;
+		};
+
+		partition@600000 {
+			label = "DTB";
+			reg = <0x800000 0x100000>;
+			read-only;
+		};
+
+		partition@700000 {
+			label = "ROOTFS";
+			reg = <0x900000 0x0>;
+		};
+	};
+};
+
+&usb_ohci {
+	status = "okay";
+};

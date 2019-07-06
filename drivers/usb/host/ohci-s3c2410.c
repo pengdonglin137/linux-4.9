@@ -28,6 +28,11 @@
 #include <linux/usb.h>
 #include <linux/usb/hcd.h>
 
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_device.h>
+#endif
+
 #include "ohci.h"
 
 
@@ -404,6 +409,13 @@ static int usb_hcd_s3c2410_probe(const struct hc_driver *driver,
 
 /*-------------------------------------------------------------------------*/
 
+#ifdef CONFIG_OF
+static const struct of_device_id s3c24xx_ohci_of_match[] = {
+	{ .compatible = "samsung,s3c2440-ohci", },
+	{},
+};
+#endif
+
 static struct hc_driver __read_mostly ohci_s3c2410_hc_driver;
 
 static int ohci_hcd_s3c2410_drv_probe(struct platform_device *pdev)
@@ -464,6 +476,9 @@ static struct platform_driver ohci_hcd_s3c2410_driver = {
 	.driver		= {
 		.name	= "s3c2410-ohci",
 		.pm	= &ohci_hcd_s3c2410_pm_ops,
+#ifdef CONFIG_OF
+		.of_match_table = of_match_ptr(s3c24xx_ohci_of_match),
+#endif
 	},
 };
 

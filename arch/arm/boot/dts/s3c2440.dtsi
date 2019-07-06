@@ -1,0 +1,97 @@
+/*
+ * Samsung's S3C2416 SoC device tree source
+ *
+ * Copyright (c) 2013 Heiko Stuebner <heiko@sntech.de>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "s3c24xx.dtsi"
+#include "s3c2440-pinctrl.dtsi"
+#include <dt-bindings/clock/s3c2410.h>
+
+/ {
+	model = "Samsung S3C2440 SoC";
+	compatible = "samsung,s3c2440";
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu {
+			compatible = "arm,arm920t";
+		};
+	};
+
+	xti: xti_clock {
+		compatible = "fixed-clock";
+		clock-frequency = <12000000>;
+		clock-output-names = "xti";
+		#clock-cells = <0>;
+	};
+
+	clocks: clock-controller@4c000000 {
+		compatible = "samsung,s3c2440-clock";
+		reg = <0x4c000000 0x20>;
+		#clock-cells = <1>;
+	};
+
+	timer@51000000 {
+		clock-names = "timers";
+		clocks = <&clocks PCLK_PWM>;
+	};
+
+	pinctrl@56000000 {
+		compatible = "samsung,s3c2440-pinctrl";
+	};
+
+	serial@50000000 {
+		compatible = "samsung,s3c2440-uart";
+		clock-names = "uart";
+		clocks = <&clocks PCLK_UART0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart0_data>;
+	};
+
+	watchdog: watchdog@53000000 {
+		interrupts = <1 9 27 3>;
+		clocks = <&clocks PCLK>;
+		clock-names = "watchdog";
+	};
+
+	rtc: rtc@57000000 {
+		clocks = <&clocks PCLK_RTC>;
+		clock-names = "rtc";
+	};
+
+	i2c@54000000 {
+		compatible = "samsung,s3c2440-i2c";
+		clocks = <&clocks PCLK_I2C>;
+		clock-names = "i2c";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c0_bus>;
+	};
+
+	nand0: nand@4e000000 {
+		compatible = "samsung,s3c2440-nand";
+		reg = <0x4e000000 0x40>;
+		interrupts = <0 0 24 3>;
+		clocks = <&clocks HCLK_NAND>;
+		clock-names = "nand";
+		pinctrl-names = "default";
+		pinctrl-0 = <&nand_pinctrl>;
+
+		status = "disabled";
+       };
+
+	usb_ohci: usb_ohci@49000000 {
+		compatible = "samsung,s3c2440-ohci";
+		reg = <0x49000000 0x60>;
+		interrupts = <0 0 26 3>;
+		clocks = <&clocks HCLK_USBH>, <&clocks UCLK>;
+		clock-names = "usb-host", "usb-bus-host";
+		status = "disabled";
+	};
+};

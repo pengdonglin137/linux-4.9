@@ -1,0 +1,109 @@
+/*
+ * Samsung S3C2416 pinctrl settings
+ *
+ * Copyright (c) 2013 Heiko Stuebner <heiko@sntech.de>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <dt-bindings/pinctrl/samsung.h>
+
+&pinctrl_0 {
+	/*
+	 * Pin banks
+	 */
+
+	gpa: gpa {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpb: gpb {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpc: gpc {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpd: gpd {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpe: gpe {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpf: gpf {
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	};
+
+	gpg: gpg {
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	};
+
+	gph: gph {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpj: gpj {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	/*
+	 * Pin groups
+	 */
+
+	uart0_data: uart0-data {
+		samsung,pins = "gph-0", "gph-1";
+		samsung,pin-function = <2>;
+	};
+
+	i2c0_bus: i2c0-bus {
+		samsung,pins = "gpe-14", "gpe-15";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_2>;
+	};
+
+	nand_pinctrl: nand_pinctrl {
+		samsung,pins = "gpa-17", "gpa-18", "gpa-19",
+				 "gpa-20", "gpa-22";
+		samsung,pin-function = <1>;
+	};
+
+	lcd_pinctrl: lcd_pinctrl {
+		samsung,pins = "gpc-8", "gpc-9", "gpc-10", "gpc-11", "gpc-12", "gpc-13", "gpc-14", "gpc-15",
+				"gpd-0", "gpd-1", "gpd-2", "gpd-3", "gpd-4", "gpd-5", "gpd-6", "gpd-7",
+				"gpd-8", "gpd-9", "gpd-10", "gpd-11", "gpd-12", "gpd-13", "gpd-14", "gpd-15",
+				"gpc-1", "gpc-2", "gpc-3", "gpc-4";
+		samsung,pin-function = <2>;
+	};
+
+	lcd_backlight: lcd_backlight {
+		samsung,pins = "gpg-4";
+		samsung,pin-function = <3>;
+	};
+
+	uda1340_codec_pinctrl: uda1340_codec_pinctrl {
+		samsung,pins = "gpb-4", "gpb-3", "gpb-2";
+		samsung,pin-function = <1>;
+	};
+
+	s3c2440_iis_pinctrl: s3c2440_iis_pinctrl {
+		samsung,pins = "gpe-0", "gpe-1", "gpe-2", "gpe-3", "gpe-4";
+		samsung,pin-function = <2>;
+	};
+};
